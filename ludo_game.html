@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ludo</title>
+<style>
+  :root{
+    --cell: 34px;
+    --red:#e74c3c;
+    --green:#27ae60;
+    --yellow:#f1c40f;
+    --blue:#2980b9;
+    --board-bg:#fdf6e3;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:14px;
+    padding:20px 10px 40px;
+    background:linear-gradient(160deg,#2c3e50,#4a6a8a);
+    font-family:'Segoe UI',Arial,sans-serif;
+    color:#fff;
+  }
+  h1{margin:6px 0 0; letter-spacing:2px; text-shadow:0 2px 4px rgba(0,0,0,.4);}
+  #panel{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    background:rgba(0,0,0,0.25);
+    padding:10px 18px;
+    border-radius:14px;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+  #status{font-size:17px; font-weight:600; min-width:220px; text-align:center;}
+  #dice{
+    width:52px;height:52px;
+    background:#fff;
+    border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:26px;font-weight:bold;color:#222;
+    box-shadow:0 3px 8px rgba(0,0,0,.4);
+    user-select:none;
+  }
+  button{
+    padding:9px 16px;
+    border:none;
+    border-radius:8px;
+    background:#f39c12;
+    color:#222;
+    font-weight:700;
+    cursor:pointer;
+    font-size:15px;
+    box-shadow:0 3px 6px rgba(0,0,0,.3);
+    transition:transform .1s;
+  }
+  button:hover:not(:disabled){transform:translateY(-2px);}
+  button:disabled{opacity:.45; cursor:not-allowed;}
+  #board{
+    display:grid;
+    grid-template-columns:repeat(15,var(--cell));
+    grid-template-rows:repeat(15,var(--cell));
+    background:var(--board-bg);
+    border:4px solid #222;
+    border-radius:8px;
+    box-shadow:0 8px 24px rgba(0,0,0,.5);
+  }
+  .cell{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:center;
+    border:1px solid rgba(0,0,0,0.08);
+    position:relative;
+  }
+  .yard-red{background:var(--red);}
+  .yard-green{background:var(--green);}
+  .yard-yellow{background:var(--yellow);}
+  .yard-blue{background:var(--blue);}
+  .yard-inner{
+    background:var(--board-bg);
+    border:none !important;
+  }
+  .path-cell{background:#fff;}
+  .home-red{background:#f5b7b1;}
+  .home-green{background:#a9dfbf;}
+  .home-yellow{background:#f9e79f;}
+  .home-blue{background:#aed6f1;}
+  .center-cell{background:#ddd;}
+  .safe-star::after{
+    content:"★";
+    position:absolute;
+    font-size:14px;
+    color:#888;
+    pointer-events:none;
+  }
+  .token{
+    width:68%;
+    height:68%;
+    border-radius:50%;
+    border:2px solid rgba(0,0,0,.5);
+    box-shadow:0 2px 3px rgba(0,0,0,.5), inset 0 -3px 4px rgba(0,0,0,.25);
+    cursor:default;
+  }
+  .token.tk-red{background:var(--red);}
+  .token.tk-green{background:var(--green);}
+  .token.tk-yellow{background:var(--yellow);}
+  .token.tk-blue{background:var(--blue);}
+  .token.movable{
+    cursor:pointer;
+    animation:pulse 0.9s infinite;
+  }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(255,255,255,.9), 0 2px 3px rgba(0,0,0,.5);}
+    70%{box-shadow:0 0 0 8px rgba(255,255,255,0), 0 2px 3px rgba(0,0,0,.5);}
+    100%{box-shadow:0 0 0 0 rgba(255,255,255,0), 0 2px 3px rgba(0,0,0,.5);}
+  }
+  .yard-slot{
+    width:60%;height:60%;
+    border-radius:50%;
+    border:2px dashed rgba(0,0,0,.25);
+  }
+  .turn-indicator{
+    width:16px;height:16px;border-radius:50%;
+    display:inline-block; vertical-align:middle; margin-right:8px;
+    box-shadow:0 0 6px 2px rgba(255,255,255,.6);
+  }
+  #legend{display:flex; gap:14px; font-size:13px; flex-wrap:wrap; justify-content:center; opacity:.85;}
+  .legend-dot{width:12px;height:12px;border-radius:50%; display:inline-block; margin-right:4px; vertical-align:middle;}
+  @media (max-width:520px){
+    :root{--cell:24px;}
+    #status{font-size:14px; min-width:0;}
+  }
+</style>
+</head>
+<body>
+
+<h1>🎲 LUDO</h1>
+
+<div id="panel">
+  <div id="status"><span class="turn-indicator" id="turnDot"></span><span id="statusText">Red's turn — roll the dice</span></div>
+  <div id="dice">1</div>
+  <button id="rollBtn">Roll Dice</button>
+  <button id="newBtn">New Game</button>
+</div>
+
+<div id="board"></div>
+
+<div id="legend">
+  <span><span class="legend-dot" style="background:var(--red)"></span>Red</span>
+  <span><span class="legend-dot" style="background:var(--green)"></span>Green</span>
+  <span><span class="legend-dot" style="background:var(--yellow)"></span>Yellow</span>
+  <span><span class="legend-dot" style="background:var(--blue)"></span>Blue</span>
+  <span>★ = safe square</span>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- Board geometry ----------
+  const PATH = [
+    [6,1],[6,2],[6,3],[6,4],[6,5],[5,6],[4,6],[3,6],[2,6],[1,6],[0,6],[0,7],[0,8],
+    [1,8],[2,8],[3,8],[4,8],[5,8],[6,9],[6,10],[6,11],[6,12],[6,13],[6,14],[7,14],
+    [8,14],[8,13],[8,12],[8,11],[8,10],[8,9],[9,8],[10,8],[11,8],[12,8],[13,8],[14,8],
+    [14,7],[14,6],[13,6],[12,6],[11,6],[10,6],[9,6],[8,5],[8,4],[8,3],[8,2],[8,1],[8,0],
+    [7,0],[6,0]
+  ]; // 52 cells
+
+  const HOME_COLUMNS = {
+    red:    [[7,1],[7,2],[7,3],[7,4],[7,5],[7,6]],
+    green:  [[1,7],[2,7],[3,7],[4,7],[5,7],[6,7]],
+    yellow: [[7,13],[7,12],[7,11],[7,10],[7,9],[7,8]],
+    blue:   [[13,7],[12,7],[11,7],[10,7],[9,7],[8,7]]
+  };
+
+  const START_INDEX = { red:0, green:13, yellow:26, blue:39 };
+  const SAFE_INDICES = new Set([0,8,13,21,26,34,39,47]);
+
+  const YARD_SLOTS = {
+    red:    [[1,1],[1,3],[3,1],[3,3]],
+    green:  [[1,10],[1,12],[3,10],[3,12]],
+    yellow: [[10,10],[10,12],[12,10],[12,12]],
+    blue:   [[10,1],[10,3],[12,1],[12,3]]
+  };
+
+  const COLORS = ['red','green','yellow','blue'];
+  const COLOR_LABEL = {red:'Red', green:'Green', yellow:'Yellow', blue:'Blue'};
+  const COLOR_HEX = {red:'#e74c3c', green:'#27ae60', yellow:'#f1c40f', blue:'#2980b9'};
+
+  const TOTAL_STEPS = 56; // finished when steps === 56
+
+  // ---------- Game state ----------
+  let state, currentIdx, diceValue, diceRolled, consecutiveSixes, gameOver;
+
+  function freshState(){
+    const s = {};
+    COLORS.forEach(c=>{ s[c] = [ -1,-1,-1,-1 ]; }); // -1 = in yard
+    return s;
+  }
+
+  function resetGame(){
+    state = freshState();
+    currentIdx = 0;
+    diceValue = 1;
+    diceRolled = false;
+    consecutiveSixes = 0;
+    gameOver = false;
+    updateStatus("Red's turn — roll the dice");
+    document.getElementById('dice').textContent = '1';
+    rollBtn.disabled = false;
+    render();
+  }
+
+  // ---------- Build board DOM once ----------
+  const boardEl = document.getElementById('board');
+  const cellEls = {}; // key "r,c" -> element
+
+  function keyOf(r,c){ return r+','+c; }
+
+  function pathIndexSet(){
+    const m = new Set();
+    PATH.forEach(([r,c])=>m.add(keyOf(r,c)));
+    return m;
+  }
+  const PATH_SET = pathIndexSet();
+
+  function homeColumnColorAt(r,c){
+    for (const color of COLORS){
+      const arr = HOME_COLUMNS[color];
+      for (let i=0;i<arr.length;i++){
+        if (arr[i][0]===r && arr[i][1]===c) return {color, idx:i};
+      }
+    }
+    return null;
+  }
+
+  function buildBoard(){
+    for (let r=0;r<15;r++){
+      for (let c=0;c<15;c++){
+        const div = document.createElement('div');
+        div.className = 'cell';
+        div.dataset.r = r; div.dataset.c = c;
+
+        const inRedYard = r<=5 && c<=5;
+        const inGreenYard = r<=5 && c>=9;
+        const inYellowYard = r>=9 && c>=9;
+        const inBlueYard = r>=9 && c<=5;
+        const inCenter = r>=6 && r<=8 && c>=6 && c<=8;
+
+        if (inRedYard || inGreenYard || inYellowYard || inBlueYard){
+          const color = inRedYard?'red':inGreenYard?'green':inYellowYard?'yellow':'blue';
+          div.classList.add('yard-'+color);
+          // carve an inner lighter square (visual only) except where yard slots sit
+        } else if (inCenter){
+          const hc = homeColumnColorAt(r,c);
+          if (hc){
+            div.classList.add('home-'+hc.color);
+          } else {
+            div.classList.add('center-cell');
+          }
+        } else {
+          const hc = homeColumnColorAt(r,c);
+          if (hc){
+            div.classList.add('home-'+hc.color);
+          } else if (PATH_SET.has(keyOf(r,c))){
+            div.classList.add('path-cell');
+            const idx = PATH.findIndex(([pr,pc])=>pr===r&&pc===c);
+            if (SAFE_INDICES.has(idx)) div.classList.add('safe-star');
+          }
+        }
+        boardEl.appendChild(div);
+        cellEls[keyOf(r,c)] = div;
+      }
+    }
+    // decorative yard slot placeholders
+    COLORS.forEach(color=>{
+      YARD_SLOTS[color].forEach(([r,c])=>{
+        const slot = document.createElement('div');
+        slot.className = 'yard-slot';
+        cellEls[keyOf(r,c)].appendChild(slot);
+      });
+    });
+  }
+  buildBoard();
+
+  // ---------- Coordinate helpers ----------
+  function tokenCoord(color, steps){
+    if (steps === -1) return null; // rendered in yard slot separately
+    if (steps <= 50){
+      const idx = (START_INDEX[color] + steps) % 52;
+      return PATH[idx];
+    } else {
+      return HOME_COLUMNS[color][steps-51];
+    }
+  }
+
+  // ---------- Rendering ----------
+  function clearTokens(){
+    document.querySelectorAll('.token').forEach(t=>t.remove());
+  }
+
+  function render(){
+    clearTokens();
+    // group tokens by destination cell to allow stacking layout
+    const byCell = {};
+
+    COLORS.forEach(color=>{
+      state[color].forEach((steps, idx)=>{
+        let coord;
+        if (steps === -1){
+          coord = YARD_SLOTS[color][idx];
+        } else {
+          coord = tokenCoord(color, steps);
+        }
+        const k = keyOf(coord[0], coord[1]);
+        if (!byCell[k]) byCell[k] = [];
+        byCell[k].push({color, idx, steps});
+      });
+    });
+
+    const movable = gameOver ? [] : movableTokenIndices(COLORS[currentIdx], diceValue);
+
+    Object.keys(byCell).forEach(k=>{
+      const list = byCell[k];
+      const cell = cellEls[k];
+      const small = list.length > 1;
+      list.forEach(t=>{
+        const el = document.createElement('div');
+        el.className = 'token tk-'+t.color;
+        if (small){ el.style.width='42%'; el.style.height='42%'; }
+        if (!gameOver && t.color === COLORS[currentIdx] && diceRolled && movable.includes(t.idx)){
+          el.classList.add('movable');
+          el.addEventListener('click', ()=> moveToken(t.color, t.idx));
+        }
+        cell.appendChild(el);
+      });
+    });
+  }
+
+  // ---------- Game logic ----------
+  function movableTokenIndices(color, dice){
+    const res = [];
+    state[color].forEach((steps, idx)=>{
+      if (steps === -1){
+        if (dice === 6) res.push(idx);
+      } else if (steps < TOTAL_STEPS){
+        if (steps + dice <= TOTAL_STEPS) res.push(idx);
+      }
+    });
+    return res;
+  }
+
+  function updateStatus(text){
+    document.getElementById('statusText').textContent = text;
+    document.getElementById('turnDot').style.background = COLOR_HEX[COLORS[currentIdx]];
+  }
+
+  const rollBtn = document.getElementById('rollBtn');
+  const newBtn = document.getElementById('newBtn');
+  const diceEl = document.getElementById('dice');
+
+  rollBtn.addEventListener('click', ()=>{
+    if (gameOver || diceRolled) return;
+    diceValue = 1 + Math.floor(Math.random()*6);
+    diceEl.textContent = diceValue;
+    diceRolled = true;
+
+    const color = COLORS[currentIdx];
+    const moves = movableTokenIndices(color, diceValue);
+
+    if (diceValue === 6){
+      consecutiveSixes++;
+    } else {
+      consecutiveSixes = 0;
+    }
+
+    if (moves.length === 0){
+      updateStatus(`${COLOR_LABEL[color]} rolled ${diceValue} — no valid moves`);
+      render();
+      setTimeout(endTurn, 900);
+      return;
+    }
+
+    if (consecutiveSixes >= 3){
+      updateStatus(`${COLOR_LABEL[color]} rolled three 6s in a row — turn forfeited`);
+      render();
+      setTimeout(()=>{ consecutiveSixes = 0; endTurn(true); }, 900);
+      return;
+    }
+
+    updateStatus(`${COLOR_LABEL[color]} rolled ${diceValue} — pick a glowing token`);
+    render();
+  });
+
+  newBtn.addEventListener('click', resetGame);
+
+  function moveToken(color, idx){
+    if (gameOver || !diceRolled || color !== COLORS[currentIdx]) return;
+    const moves = movableTokenIndices(color, diceValue);
+    if (!moves.includes(idx)) return;
+
+    const steps = state[color][idx];
+    const newSteps = steps === -1 ? 0 : steps + diceValue;
+    state[color][idx] = newSteps;
+
+    // Capture logic — only on the common path (steps 0..50), non-safe squares
+    let captured = false;
+    if (newSteps <= 50){
+      const landIdx = (START_INDEX[color] + newSteps) % 52;
+      const isSafe = SAFE_INDICES.has(landIdx);
+      if (!isSafe){
+        const [lr,lc] = PATH[landIdx];
+        COLORS.forEach(oc=>{
+          if (oc === color) return;
+          state[oc].forEach((os, oi)=>{
+            if (os === -1 || os > 50) return; // yard or already in home column: safe
+            const [orr,occ] = tokenCoord(oc, os);
+            if (orr===lr && occ===lc){
+              state[oc][oi] = -1; // send home
+              captured = true;
+            }
+          });
+        });
+      }
+    }
+
+    render();
+
+    // Win check
+    const finishedAll = state[color].every(s=>s===TOTAL_STEPS);
+    if (finishedAll){
+      gameOver = true;
+      updateStatus(`🏆 ${COLOR_LABEL[color]} wins the game!`);
+      rollBtn.disabled = true;
+      return;
+    }
+
+    if (captured){
+      updateStatus(`${COLOR_LABEL[color]} captured an opponent's token!`);
+    }
+
+    if (diceValue === 6 && consecutiveSixes < 3){
+      diceRolled = false;
+      updateStatus(`${COLOR_LABEL[color]} rolled a 6 — roll again`);
+    } else {
+      endTurn();
+    }
+  }
+
+  function endTurn(forfeited){
+    if (gameOver) return;
+    consecutiveSixes = 0;
+    currentIdx = (currentIdx + 1) % COLORS.length;
+    diceRolled = false;
+    updateStatus(`${COLOR_LABEL[COLORS[currentIdx]]}'s turn — roll the dice`);
+    render();
+  }
+
+  // ---------- Start ----------
+  resetGame();
+})();
+</script>
+</body>
+</html>
